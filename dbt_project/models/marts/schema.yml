@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: mart_daily_demand_signals
+    description: One row per market-day; the demand-pressure product.
+    columns:
+      - name: daily_key
+        tests: [not_null, unique]
+      - name: arrivals
+        tests: [not_null]
+      - name: demand_pressure
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["NORMAL", "ELEVATED", "HIGH", "WARMUP"]
+  - name: mart_hourly_arrival_curve
+    columns:
+      - name: market
+        tests: [not_null]

@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_flights
+    columns:
+      - name: market
+        tests: [not_null]
+      - name: arrival_ts_utc
+        tests: [not_null]
+  - name: stg_weather
+    columns:
+      - name: market
+        tests: [not_null]
+      - name: observed_at_local
+        tests: [not_null]

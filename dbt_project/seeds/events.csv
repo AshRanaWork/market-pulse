@@ -1,0 +1,20 @@
+market,event_date,event_name,weight
+LAS,2026-01-06,CES 2026,2
+LAS,2026-01-07,CES 2026,2
+LAS,2026-01-08,CES 2026,2
+LAS,2026-01-09,CES 2026,2
+LAS,2026-05-15,EDC Las Vegas,2
+LAS,2026-05-16,EDC Las Vegas,2
+LAS,2026-05-17,EDC Las Vegas,2
+LAS,2026-11-19,F1 Las Vegas Grand Prix,2
+LAS,2026-11-20,F1 Las Vegas Grand Prix,2
+LAS,2026-11-21,F1 Las Vegas Grand Prix,2
+LAS,2026-12-03,National Finals Rodeo (opening),2
+LAS,2026-12-31,New Year's Eve,2
+LAX,2026-01-01,Rose Bowl / Rose Parade,2
+LAX,2026-02-01,Grammy Awards,1
+LAX,2026-03-08,LA Marathon,1
+LAX,2026-03-15,Academy Awards,1
+LAX,2026-07-04,July 4th holiday travel,1
+LAX,2026-11-25,Thanksgiving travel peak,2
+LAX,2026-12-31,New Year's Eve,1

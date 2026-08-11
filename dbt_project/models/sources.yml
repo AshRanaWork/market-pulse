@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    # DuckDB tables live in 'main'; Athena tables live in the
+    # 'market_pulse' Glue database. Same models, both worlds.
+    schema: "{{ 'market_pulse' if target.type == 'athena' else 'main' }}"
+    tables:
+      - name: raw_flights
+        description: Arrivals landed by extract_flights.py (all VARCHAR).
+      - name: raw_weather
+        description: Hourly weather landed by extract_weather.py (all VARCHAR).

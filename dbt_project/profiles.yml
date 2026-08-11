@@ -1,0 +1,19 @@
+# Same models, two targets: local DuckDB for development,
+# Athena over S3 for production. MP_BUCKET is read from the environment
+# so the bucket name never gets hardcoded.
+market_pulse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../warehouse.duckdb
+      threads: 1
+    prod:
+      type: athena
+      region_name: us-west-2
+      s3_staging_dir: "s3://{{ env_var('MP_BUCKET') }}/athena-results/"
+      s3_data_dir: "s3://{{ env_var('MP_BUCKET') }}/dbt/"
+      database: awsdatacatalog
+      schema: market_pulse
+      work_group: primary
+      threads: 1

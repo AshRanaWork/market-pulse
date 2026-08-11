@@ -1,0 +1,41 @@
+name: daily-transform
+
+on:
+  schedule:
+    - cron: "30 15 * * *"        # 15:30 UTC = 7:30/8:30am Pacific
+  workflow_dispatch:              # manual Run button
+
+jobs:
+  dbt-and-alert:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-west-2
+      MP_BUCKET: ${{ secrets.MP_BUCKET }}
+      SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
+      MODE: athena
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt + boto3
+        run: pip install dbt-athena-community boto3
+
+      - name: Seed reference data
+        working-directory: dbt_project
+        run: dbt seed --target prod --profiles-dir .
+
+      - name: Build models (silver + gold)
+        working-directory: dbt_project
+        run: dbt run --target prod --profiles-dir .
+
+      - name: Data quality tests (fail loudly on bad data)
+        working-directory: dbt_project
+        run: dbt test --target prod --profiles-dir .
+
+      - name: Demand alert check
+        run: python alert.py
