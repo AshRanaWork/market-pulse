@@ -12,7 +12,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ["NORMAL", "ELEVATED", "HIGH", "WARMUP"]
+              arguments:
+                values: ["NORMAL", "ELEVATED", "HIGH", "WARMUP"]
   - name: mart_hourly_arrival_curve
     columns:
       - name: market
