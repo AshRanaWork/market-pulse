@@ -6,23 +6,13 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    env:
+      OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+      OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
     steps:
-      - name: Show runner public IP
-        run: curl -s --max-time 20 https://api.ipify.org || echo "ipify unreachable"
-
-      - name: Probe OpenSky auth host
-        run: |
-          echo "--- auth.opensky-network.org ---"
-          curl -s -o /dev/null -w "http_code=%{http_code} connect=%{time_connect}s total=%{time_total}s\n" \
-            --max-time 30 \
-            -X POST "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token" \
-            -d "grant_type=client_credentials&client_id=probe&client_secret=probe" \
-            || echo "FAILED to reach auth host (exit $?)"
-
-      - name: Probe OpenSky API host
-        run: |
-          echo "--- opensky-network.org ---"
-          curl -s -o /dev/null -w "http_code=%{http_code} connect=%{time_connect}s total=%{time_total}s\n" \
-            --max-time 30 \
-            "https://opensky-network.org/api/flights/arrival?airport=KLAS&begin=1&end=2" \
-            || echo "FAILED to reach API host (exit $?)"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Real extraction test
+        run: python3 extract_flights.py
