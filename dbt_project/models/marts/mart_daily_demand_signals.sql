@@ -2,6 +2,13 @@
 -- operations manager would act on. Rules-based v1 by design: every
 -- point in the score is explainable, which beats a black box until
 -- there is occupancy ground truth to validate against.
+--
+-- score_drivers   spells out exactly which rules fired and for how many
+--                 points, so the number is auditable rather than opaque.
+-- interpretation  states what the signal means and where to look. It
+--                 deliberately stops short of a pricing recommendation:
+--                 this feed has no occupancy, rate, or booking-pace data,
+--                 so it is a leading indicator, not a decision.
 
 with daily_arrivals as (
     select market, arrival_date_local, count(*) as arrivals
@@ -87,6 +94,35 @@ scored as (
         + (case when is_extreme_heat = 1 or is_rain = 1
                 then 1 else 0 end)                 as pressure_score
     from joined
+),
+
+labeled as (
+    select *,
+        case
+            when days_in_window < 7 then 'WARMUP'
+            when pressure_score >= 4       then 'HIGH'
+            when pressure_score >= 2       then 'ELEVATED'
+            else 'NORMAL'
+        end as demand_pressure,
+
+        -- Every rule that contributed a point, with its contribution.
+        -- Empty string when nothing fired, which is itself informative.
+        rtrim(
+            (case when arrivals_vs_7day_avg_pct >= 20
+                  then 'arrivals +' || cast(arrivals_vs_7day_avg_pct as varchar) || '% vs 7-day (+2); '
+                  when arrivals_vs_7day_avg_pct >= 10
+                  then 'arrivals +' || cast(arrivals_vs_7day_avg_pct as varchar) || '% vs 7-day (+1); '
+                  else '' end)
+            || (case when is_weekend = 1 then 'weekend (+1); ' else '' end)
+            || (case when is_holiday = 1 then 'holiday (+1); ' else '' end)
+            || (case when is_major_event = 1
+                     then 'event: ' || coalesce(event_name, 'unnamed') || ' (+2); '
+                     else '' end)
+            || (case when is_extreme_heat = 1 then 'extreme heat (+1); '
+                     when is_rain = 1 then 'rain (+1); '
+                     else '' end)
+        , '; ') as score_drivers
+    from scored
 )
 
 select
@@ -100,10 +136,24 @@ select
     is_weekend, is_holiday, is_major_event, event_name,
     is_extreme_heat, is_pool_weather, is_rain,
     pressure_score,
-    case
-        when days_in_window < 7 then 'WARMUP'
-        when pressure_score >= 4       then 'HIGH'
-        when pressure_score >= 2       then 'ELEVATED'
-        else 'NORMAL'
-    end as demand_pressure
-from scored
+    demand_pressure,
+    case when score_drivers = '' then 'no rules fired' else score_drivers end
+        as score_drivers,
+    case demand_pressure
+        when 'WARMUP' then
+            'Baseline still building. The signal needs a full 7-day trailing '
+            || 'window before it means anything. No action.'
+        when 'HIGH' then
+            'Inbound volume and conditions are well above trend for this market. '
+            || 'This pattern typically precedes elevated same-day and next-day '
+            || 'demand. Worth reviewing rate and remaining inventory before the '
+            || 'evening arrival peak, alongside your own booking pace.'
+        when 'ELEVATED' then
+            'Running above baseline, but not decisively. Treat as a watch item: '
+            || 'check whether your own booking pace is tracking the same '
+            || 'direction before changing anything.'
+        else
+            'Inbound volume is in line with the trailing week. Nothing here '
+            || 'argues for a change to rate or staffing.'
+    end as interpretation
+from labeled

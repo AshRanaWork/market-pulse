@@ -16,7 +16,8 @@ REGION = os.environ.get("AWS_REGION", "us-west-2")
 
 QUERY = """
 SELECT market, arrival_date_local, arrivals,
-       arrivals_vs_7day_avg_pct, demand_pressure, event_name
+       arrivals_vs_7day_avg_pct, demand_pressure, event_name,
+       score_drivers, interpretation
 FROM {schema}mart_daily_demand_signals
 WHERE arrival_date_local =
       (SELECT max(arrival_date_local) FROM {schema}mart_daily_demand_signals)
@@ -63,11 +64,18 @@ def main():
         print("No mart rows found (pipeline may still be in warmup).")
         return
     high = [r for r in rows if str(r[4]) == "HIGH"]
-    lines = [f"Market Pulse - demand signals for {rows[0][1]}:"]
+    lines = [f"Market Pulse - demand signals for {rows[0][1]}", ""]
     for r in rows:
-        lines.append(
-            f"  {r[0]}: {r[4]}  ({r[2]} arrivals, {r[3]}% vs 7-day avg"
-            + (f", event: {r[5]}" if r[5] else "") + ")")
+        market, arrivals, pct = r[0], r[2], r[3]
+        pressure, drivers, meaning = r[4], r[6], r[7]
+        lines.append(f"{market}: {pressure}  ({arrivals} arrivals, "
+                     f"{pct}% vs 7-day avg)")
+        lines.append(f"  Why: {drivers}")
+        lines.append(f"  What it means: {meaning}")
+        lines.append("")
+    lines.append("Leading indicator only. Built from public flight arrivals "
+                 "and weather; it has no visibility into your occupancy, "
+                 "rate, or booking pace.")
     message = "\n".join(lines)
     print(message)
     if high and SNS_TOPIC_ARN:
