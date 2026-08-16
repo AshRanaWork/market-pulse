@@ -56,7 +56,7 @@ def read_raw(spark, path_glob: str, schema: StructType):
     df = (spark.read.schema(schema).option("header", "false")
           .csv(path_glob)
           .withColumn("dt", F.regexp_extract(
-              F.input_file_name(), r"dt=(\d{4}-\d{2}-\d{2})", 1)))
+              F.col("_metadata.file_path"), r"dt=(\d{4}-\d{2}-\d{2})", 1)))
     return df
 
 
