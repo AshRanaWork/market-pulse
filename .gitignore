@@ -9,3 +9,4 @@ logs/
 *.zip
 .user.yml
 build/
+databricks_upload.zip
